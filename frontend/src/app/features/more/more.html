@@ -1,0 +1,165 @@
+<div class="page">
+  <app-page-header title="Mer" />
+
+  <section class="surface-card user row">
+    <mat-icon>account_circle</mat-icon>
+    <div class="grow">
+      <div>{{ auth.user()?.name }}</div>
+      <div class="muted small">{{ auth.user()?.email }}</div>
+    </div>
+    <button mat-stroked-button type="button" (click)="auth.logout()">Logg ut</button>
+  </section>
+
+  <section class="surface-card">
+    <h2>Mål</h2>
+    @if (summary.value(); as s) {
+      @if (s.targetKcal) {
+        <div class="targets">
+          @if (s.bmr) { <div><span class="muted small">Hvilemetabolisme</span><strong>{{ s.bmr | number: '1.0-0' }} kcal</strong></div> }
+          <div><span class="muted small">Forbrenning/dag{{ s.tdeeSource === 'Fitbit' ? ' (Fitbit)' : '' }}</span><strong>{{ s.tdee | number: '1.0-0' }} kcal</strong></div>
+          <div class="accent"><span class="small">Kalorimål</span><strong>{{ s.targetKcal | number: '1.0-0' }} kcal</strong></div>
+          @if (s.proteinTargetG) { <div><span class="muted small">Proteinmål</span><strong>{{ s.proteinTargetG | number: '1.0-0' }} g</strong></div> }
+        </div>
+      } @else {
+        <p class="muted">Fyll ut profilen og registrer vekten din for å beregne kalorimål.</p>
+      }
+      @if (s.tdeeSource === 'Fitbit') {
+        <p class="muted small source">Forbrenning er snittet av målt forbrenning fra Fitbit siste 14 dager (dager med minst 1000 skritt).</p>
+      } @else if (s.tdeeSource === 'Formula') {
+        <p class="muted small source">Forbrenning er beregnet med formel (Mifflin-St Jeor × aktivitetsnivå).</p>
+      }
+    }
+  </section>
+
+  <section class="surface-card">
+    <h2>Fitbit</h2>
+    @if (fitbit.value(); as f) {
+      @if (!f.configured) {
+        <p class="muted">Fitbit er ikke satt opp på serveren ennå.</p>
+      } @else if (f.connected) {
+        <div class="row fitbit-status">
+          <mat-icon class="ok">watch</mat-icon>
+          <div class="grow">
+            <div>Tilkoblet · {{ f.daysSynced }} dager synkronisert</div>
+            @if (f.lastSyncAt) {
+              <div class="muted small">Sist oppdatert {{ f.lastSyncAt | date: 'd. MMM HH:mm' }}</div>
+            }
+          </div>
+        </div>
+        @if (f.lastError) {
+          <p class="error-text small">{{ f.lastError }}</p>
+        }
+        <div class="row actions">
+          <button mat-stroked-button type="button" [disabled]="fitbitBusy()" (click)="syncFitbit()"><mat-icon>sync</mat-icon> Oppdater nå</button>
+          @if (f.lastError) {
+            <button mat-stroked-button type="button" (click)="connectFitbit()">Koble til på nytt</button>
+          }
+          <button mat-button type="button" class="danger" [disabled]="fitbitBusy()" (click)="disconnectFitbit()">Koble fra</button>
+        </div>
+      } @else {
+        <p class="muted">Koble til Fitbit-klokka for å bruke faktisk forbrent energi i stedet for et estimat.</p>
+        <button mat-flat-button type="button" (click)="connectFitbit()"><mat-icon>watch</mat-icon> Koble til Fitbit</button>
+      }
+    }
+  </section>
+
+  <section class="surface-card">
+    <h2>Vekt</h2>
+    <div class="weight-form">
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Dato</mat-label>
+        <input matInput type="date" name="wdate" [max]="today" [ngModel]="weightDate()" (ngModelChange)="weightDate.set($event)" />
+      </mat-form-field>
+      <mat-form-field subscriptSizing="dynamic">
+        <mat-label>Vekt</mat-label>
+        <input matInput appDecimal name="wkg" [ngModel]="weightKg()" (ngModelChange)="weightKg.set($event)" />
+        <span matSuffix class="suffix">kg</span>
+      </mat-form-field>
+      <button mat-flat-button type="button" (click)="saveWeight()">Lagre</button>
+    </div>
+    @for (w of recentWeights(); track w.date) {
+      <div class="list-item">
+        <span class="grow">{{ w.date | date: 'EEE d. MMM y' }}</span>
+        <span>{{ w.weightKg | number: '1.0-1' }} kg</span>
+        <button mat-icon-button type="button" (click)="deleteWeight(w.date)" aria-label="Slett måling"><mat-icon>delete_outline</mat-icon></button>
+      </div>
+    }
+  </section>
+
+  <section class="surface-card">
+    <h2>Profil</h2>
+    <form #pf="ngForm" class="profile" (ngSubmit)="saveProfile(pf)" novalidate>
+      <mat-form-field>
+        <mat-label>Kjønn</mat-label>
+        <mat-select name="sex" [(ngModel)]="profile.sex" required>
+          <mat-option value="Female">Kvinne</mat-option>
+          <mat-option value="Male">Mann</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Fødselsdato</mat-label>
+        <input matInput type="date" name="birth" [(ngModel)]="profile.birthDate" required [max]="today" />
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Høyde</mat-label>
+        <input matInput appDecimal name="height" [(ngModel)]="profile.heightCm" required min="100" max="250" />
+        <span matSuffix class="suffix">cm</span>
+        <mat-error>100–250 cm</mat-error>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Proteinmål</mat-label>
+        <input matInput appDecimal name="protein" [(ngModel)]="profile.proteinPerKg" required min="0" max="4" />
+        <span matSuffix class="suffix">g/kg</span>
+        <mat-hint>Vanlig: 1,6–2,2</mat-hint>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Aktivitetsnivå</mat-label>
+        <mat-select name="activity" [(ngModel)]="profile.activityFactor" required>
+          @for (a of activity; track a.value) {
+            <mat-option [value]="a.value">{{ a.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field class="wide">
+        <mat-label>Mål</mat-label>
+        <mat-select name="goal" [(ngModel)]="profile.deficitKcal" required>
+          @for (g of goals; track g.value) {
+            <mat-option [value]="g.value">{{ g.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-flat-button type="submit" class="wide" [disabled]="savingProfile()">Lagre profil</button>
+    </form>
+  </section>
+
+  <section class="surface-card">
+    <h2>Utseende</h2>
+    <mat-button-toggle-group class="theme" [value]="theme.mode()" (change)="setTheme($event.value)" hideSingleSelectionIndicator>
+      <mat-button-toggle value="system"><mat-icon>brightness_auto</mat-icon> System</mat-button-toggle>
+      <mat-button-toggle value="light"><mat-icon>light_mode</mat-icon> Lys</mat-button-toggle>
+      <mat-button-toggle value="dark"><mat-icon>dark_mode</mat-icon> Mørk</mat-button-toggle>
+    </mat-button-toggle-group>
+  </section>
+
+  <section class="surface-card links">
+    <a class="list-item" routerLink="/foods">
+      <mat-icon>inventory_2</mat-icon><span class="grow">Varer</span><mat-icon class="muted">chevron_right</mat-icon>
+    </a>
+    @if (auth.user()?.isAdmin) {
+      <a class="list-item" href="/api/backup" download>
+        <mat-icon>backup</mat-icon><span class="grow">Last ned sikkerhetskopi av databasen</span><mat-icon class="muted">download</mat-icon>
+      </a>
+    }
+  </section>
+
+  @if (!isStandalone) {
+    <section class="surface-card install">
+      <h2>Installer på telefonen</h2>
+      @if (isIos) {
+        <p>Trykk på <strong>Del</strong>-knappen i Safari og velg <strong>Legg til på Hjem-skjerm</strong>.</p>
+      } @else {
+        <p>Åpne menyen (⋮) i Chrome og velg <strong>Installer app</strong>.</p>
+      }
+    </section>
+  }
+</div>

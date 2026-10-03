@@ -1,0 +1,116 @@
+<div class="page">
+  <header class="page-header day-nav">
+    <button mat-icon-button type="button" (click)="shift(-1)" aria-label="Forrige dag"><mat-icon>chevron_left</mat-icon></button>
+    <button mat-button type="button" class="day" (click)="goToday()">{{ dayLabel() }}</button>
+    <button mat-icon-button type="button" (click)="shift(1)" aria-label="Neste dag"><mat-icon>chevron_right</mat-icon></button>
+  </header>
+
+  <section class="summary surface-card">
+    @if (target(); as t) {
+      <div class="ring-wrap">
+        <mat-progress-spinner
+          class="ring"
+          [class.over]="remaining() < 0"
+          mode="determinate"
+          [value]="kcalPct()"
+          diameter="132"
+          strokeWidth="10"
+        />
+        <div class="ring-text">
+          <div class="big">{{ (remaining() < 0 ? -remaining() : remaining()) | number: '1.0-0' }}</div>
+          <div class="muted small">{{ remaining() < 0 ? 'kcal over' : 'kcal igjen' }}</div>
+        </div>
+      </div>
+      <div class="facts">
+        <div><span class="muted">Spist</span> <strong>{{ totals().kcal | number: '1.0-0' }}</strong> kcal</div>
+        <div><span class="muted">{{ measured() ? 'Dagens mål' : 'Mål' }}</span> <strong>{{ t | number: '1.0-0' }}</strong> kcal</div>
+        @if (proteinTarget(); as pt) {
+          <div class="protein">
+            <div class="row">
+              <span class="muted">Protein</span>
+              <span class="spacer"></span>
+              <strong>{{ totals().protein | number: '1.0-0' }}</strong>&nbsp;/ {{ pt | number: '1.0-0' }} g
+            </div>
+            <mat-progress-bar mode="determinate" [value]="proteinPct()" />
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="no-target">
+        <div class="big">{{ totals().kcal | number: '1.0-0' }} kcal</div>
+        <div class="muted">
+          Protein {{ totals().protein | number: '1.0-0' }} g ·
+          <a routerLink="/more">Sett opp profil og vekt</a> for å få kalorimål.
+        </div>
+      </div>
+    }
+  </section>
+
+  @if (measured(); as e) {
+    <section class="burn surface-card">
+      <mat-icon class="burn-icon">local_fire_department</mat-icon>
+      <div class="grow">
+        <div>
+          <strong>{{ e.burnedSoFar | number: '1.0-0' }} kcal</strong> forbrent{{ isToday() ? ' så langt' : '' }}
+          · {{ e.steps | number: '1.0-0' }} skritt
+        </div>
+        <div class="muted small">
+          @if (isToday()) {
+            Anslag for hele dagen: ~{{ e.projectedBurn | number: '1.0-0' }} kcal · Fitbit, oppdatert {{ e.updatedAt | date: 'HH:mm' }}
+          } @else {
+            Målt med Fitbit
+          }
+        </div>
+      </div>
+      @if (isToday()) {
+        <button mat-icon-button type="button" [disabled]="refreshing()" (click)="refreshEnergy()" aria-label="Oppdater fra Fitbit">
+          <mat-icon>sync</mat-icon>
+        </button>
+      }
+    </section>
+  }
+
+  <div class="macros">
+    @for (k of macroKeys; track k) {
+      <div class="macro">
+        <span class="muted small">{{ labels[k].label }}</span>
+        <span>{{ totals()[k] | number: '1.0-1' }} g</span>
+      </div>
+    }
+  </div>
+
+  @if (entries.error()) {
+    <p class="error-text">Kunne ikke hente dagens logg.</p>
+  }
+
+  @for (meal of meals; track meal.key) {
+    <section class="meal surface-card">
+      <div class="meal-head">
+        <mat-icon class="muted">{{ meal.icon }}</mat-icon>
+        <h2>{{ meal.label }}</h2>
+        <span class="spacer"></span>
+        <span class="muted">{{ mealKcal()[meal.key] | number: '1.0-0' }} kcal</span>
+        <a
+          mat-icon-button
+          [routerLink]="['/add']"
+          [queryParams]="{ date: day(), meal: meal.key }"
+          [attr.aria-label]="'Legg til i ' + meal.label"
+        >
+          <mat-icon>add_circle</mat-icon>
+        </a>
+      </div>
+      @for (e of byMeal()[meal.key]; track e.id) {
+        <button type="button" class="list-item" (click)="edit(e)">
+          <span class="grow">
+            <div class="title">{{ e.name }}</div>
+            <div class="muted small">
+              {{ e.grams | number: '1.0-0' }} g · P {{ e.nutrients.protein | number: '1.0-1' }} · K
+              {{ e.nutrients.carbs | number: '1.0-1' }} · F {{ e.nutrients.fat | number: '1.0-1' }}
+            </div>
+          </span>
+          <span>{{ e.nutrients.kcal | number: '1.0-0' }}</span>
+        </button>
+      }
+    </section>
+  }
+</div>

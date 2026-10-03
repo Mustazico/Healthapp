@@ -1,0 +1,111 @@
+@use '@angular/material' as mat;
+
+html {
+  height: 100%;
+  // Effective light/dark is set at runtime by ThemeService via `color-scheme`.
+  color-scheme: light dark;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$green-palette,
+        tertiary: mat.$orange-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+}
+
+body {
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+  margin: 0;
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3 { margin: 0; }
+h1 { font: var(--mat-sys-title-large); }
+h2 { font: var(--mat-sys-title-medium); }
+h3 { font: var(--mat-sys-title-small); }
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--mat-sys-surface);
+  padding-top: env(safe-area-inset-top);
+}
+
+.spacer { flex: 1; }
+.muted { color: var(--mat-sys-on-surface-variant); }
+.small { font: var(--mat-sys-body-small); }
+.error-text { color: var(--mat-sys-error); }
+.full { width: 100%; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.surface-card {
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  cursor: pointer;
+  color: inherit;
+  text-decoration: none;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+
+  &:last-child { border-bottom: 0; }
+  .grow { flex: 1; min-width: 0; }
+  .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #fff; }
+}
+
+.fab {
+  position: fixed !important;
+  right: 16px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+
+.empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--mat-sys-on-surface-variant);
+}

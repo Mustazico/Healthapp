@@ -1,0 +1,20 @@
+<main class="content" [class.with-nav]="showNav()">
+  <router-outlet />
+</main>
+
+@if (showNav()) {
+  <nav class="bottom-nav" aria-label="Hovedmeny">
+    @for (item of nav; track item.path) {
+      <a
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.exact }"
+        #rla="routerLinkActive"
+        [attr.aria-current]="rla.isActive ? 'page' : null"
+      >
+        <span class="pill"><mat-icon>{{ item.icon }}</mat-icon></span>
+        <span class="label">{{ item.label }}</span>
+      </a>
+    }
+  </nav>
+}

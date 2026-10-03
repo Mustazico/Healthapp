@@ -1,0 +1,45 @@
+.content.with-nav {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-around;
+  background: var(--mat-sys-surface-container);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+  box-shadow: 0 -1px 0 var(--mat-sys-outline-variant);
+
+  a {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: var(--mat-sys-on-surface-variant);
+    text-decoration: none;
+    font: var(--mat-sys-label-medium);
+  }
+
+  .pill {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 30px;
+    border-radius: 15px;
+    transition: background-color 150ms;
+  }
+
+  a.active {
+    color: var(--mat-sys-on-surface);
+
+    .pill {
+      background: var(--mat-sys-secondary-container);
+      color: var(--mat-sys-on-secondary-container);
+    }
+  }
+}

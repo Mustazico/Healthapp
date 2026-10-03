@@ -1,0 +1,84 @@
+<div class="page">
+  <app-page-header title="Statistikk" />
+
+  <mat-button-toggle-group class="ranges" [value]="range()" (change)="setRange($event.value)" hideSingleSelectionIndicator>
+    <mat-button-toggle value="week">Uke</mat-button-toggle>
+    <mat-button-toggle value="4w">4 uker</mat-button-toggle>
+    <mat-button-toggle value="3m">3 mnd</mat-button-toggle>
+    <mat-button-toggle value="1y">1 år</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <div class="period">
+    @if (range() === 'week') {
+      <button mat-icon-button type="button" (click)="weekOffset.set(weekOffset() - 1)" aria-label="Forrige uke">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+    }
+    <span>{{ periodLabel() }}</span>
+    @if (range() === 'week') {
+      <button mat-icon-button type="button" [disabled]="weekOffset() >= 0" (click)="weekOffset.set(weekOffset() + 1)" aria-label="Neste uke">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    }
+  </div>
+
+  @if (stats.isLoading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (totals(); as t) {
+    <div class="cards">
+      <div class="card">
+        <span class="muted small">Snitt per dag</span>
+        <strong>{{ t.avgKcal | number: '1.0-0' }} kcal</strong>
+      </div>
+      <div class="card">
+        <span class="muted small">Protein per dag</span>
+        <strong>{{ t.avgProtein | number: '1.0-0' }} g</strong>
+      </div>
+      <div class="card" [class.deficit]="t.totalBalance < 0" [class.surplus]="t.totalBalance > 0">
+        <span class="small">{{ t.totalBalance <= 0 ? 'Underskudd' : 'Overskudd' }}</span>
+        <strong>{{ (t.totalBalance < 0 ? -t.totalBalance : t.totalBalance) | number: '1.0-0' }} kcal</strong>
+      </div>
+      <div class="card">
+        <span class="muted small">Beregnet endring</span>
+        <strong>{{ t.estimatedKgChange > 0 ? '+' : '' }}{{ t.estimatedKgChange | number: '1.0-2' }} kg</strong>
+      </div>
+    </div>
+    <p class="muted small">
+      Basert på {{ t.loggedDays }} loggførte dager.
+      @if (!hasTdee()) {
+        Legg inn profil og vekt under «Mer» for å beregne underskudd.
+      }
+    </p>
+
+    <section class="surface-card">
+      <h2>Energi per dag</h2>
+      <app-chart [config]="energyChart()" />
+      @if (fitbitDays() > 0) {
+        <p class="muted small">Forbrenning er målt med Fitbit for {{ fitbitDays() }} av dagene, resten er beregnet med formel.</p>
+      }
+    </section>
+
+    <section class="surface-card">
+      <h2>Snitt per loggført dag</h2>
+      <table class="macros">
+        <tbody>
+          @for (k of keys; track k) {
+            <tr>
+              <td>{{ labels[k].label }}</td>
+              <td class="num">{{ avg()[k] | number: (k === 'kcal' ? '1.0-0' : '1.0-1') }} {{ labels[k].unit }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    @if (hasWeights()) {
+      <section class="surface-card">
+        <h2>Vekt</h2>
+        <app-chart [config]="weightChart()" />
+      </section>
+    }
+  }
+</div>
