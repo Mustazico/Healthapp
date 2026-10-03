@@ -67,6 +67,9 @@ export class MacroGoalService {
       ...current,
       [key]: normalized,
     }));
+  }
+
+  save(): void {
     this.persistGoals();
   }
 

@@ -166,8 +166,14 @@ export class MorePage {
     this.macroGoals.setGoal(key, Number.isFinite(parsed) ? parsed : 0);
   }
 
+  protected saveMacroGoals(): void {
+    this.macroGoals.save();
+    this.snack.open('Målene er lagret', undefined, { duration: 2000 });
+  }
+
   protected resetMacroGoals(): void {
     this.macroGoals.reset();
+    this.snack.open('Målene er tilbakestilt', undefined, { duration: 2000 });
   }
 
   protected async saveProfile(f: NgForm): Promise<void> {
