@@ -7,33 +7,29 @@
 
   <section class="summary surface-card">
     @if (target(); as t) {
-      <div class="ring-wrap">
-        <mat-progress-spinner
-          class="ring"
-          [class.over]="remaining() < 0"
-          mode="determinate"
-          [value]="kcalPct()"
-          diameter="132"
-          strokeWidth="10"
-        />
-        <div class="ring-text">
-          <div class="big">{{ (remaining() < 0 ? -remaining() : remaining()) | number: '1.0-0' }}</div>
-          <div class="muted small">{{ remaining() < 0 ? 'kcal over' : 'kcal igjen' }}</div>
+      <div class="ring-row">
+        <div class="ring-stat ring-stat-left">
+          <span>Spist</span>
+          <strong>{{ totals().kcal | number: '1.0-0' }}</strong>
         </div>
-      </div>
-      <div class="facts">
-        <div><span class="muted">Spist</span> <strong>{{ totals().kcal | number: '1.0-0' }}</strong> kcal</div>
-        <div><span class="muted">{{ measured() ? 'Dagens mål' : 'Mål' }}</span> <strong>{{ t | number: '1.0-0' }}</strong> kcal</div>
-        @if (proteinTarget(); as pt) {
-          <div class="protein">
-            <div class="row">
-              <span class="muted">Protein</span>
-              <span class="spacer"></span>
-              <strong>{{ totals().protein | number: '1.0-0' }}</strong>&nbsp;/ {{ pt | number: '1.0-0' }} g
-            </div>
-            <mat-progress-bar mode="determinate" [value]="proteinPct()" />
+        <div class="ring-wrap">
+          <mat-progress-spinner
+            class="ring"
+            [class.over]="remaining() < 0"
+            mode="determinate"
+            [value]="kcalPct()"
+            diameter="180"
+            strokeWidth="12"
+          />
+          <div class="ring-text">
+            <div class="ring-center-value">{{ (remaining() < 0 ? -remaining() : remaining()) | number: '1.0-0' }}</div>
+            <div class="ring-center-tag">{{ remaining() < 0 ? 'over' : 'igjen' }}</div>
           </div>
-        }
+        </div>
+        <div class="ring-stat ring-stat-right">
+          <span>Mål</span>
+          <strong>{{ t | number: '1.0-0' }}</strong>
+        </div>
       </div>
     } @else {
       <div class="no-target">
@@ -48,33 +44,34 @@
 
   @if (measured(); as e) {
     <section class="burn surface-card">
-      <mat-icon class="burn-icon">local_fire_department</mat-icon>
-      <div class="grow">
-        <div>
-          <strong>{{ e.burnedSoFar | number: '1.0-0' }} kcal</strong> forbrent{{ isToday() ? ' så langt' : '' }}
-          · {{ e.steps | number: '1.0-0' }} skritt
+      <div class="burn-row">
+        <div class="burn-item">
+          <mat-icon class="burn-icon">local_fire_department</mat-icon>
+          <strong>{{ e.burnedSoFar | number: '1.0-0' }} kcal</strong>
         </div>
-        <div class="muted small">
-          @if (isToday()) {
-            Anslag for hele dagen: ~{{ e.projectedBurn | number: '1.0-0' }} kcal · Fitbit, oppdatert {{ e.updatedAt | date: 'HH:mm' }}
-          } @else {
-            Målt med Fitbit
-          }
+        <div class="burn-item">
+          <strong>{{ e.steps | number: '1.0-0' }}</strong>
+          <mat-icon class="burn-icon">directions_walk</mat-icon>
         </div>
       </div>
+
       @if (isToday()) {
-        <button mat-icon-button type="button" [disabled]="refreshing()" (click)="refreshEnergy()" aria-label="Oppdater fra Fitbit">
-          <mat-icon>sync</mat-icon>
-        </button>
+        <div class="burn-detail muted small"></div>
+      } @else {
+        <div class="burn-detail muted small">Målt med Fitbit</div>
       }
+
     </section>
   }
 
-  <div class="macros">
+  <div class="macro-progress-list">
     @for (k of macroKeys; track k) {
-      <div class="macro">
-        <span class="muted small">{{ labels[k].label }}</span>
-        <span>{{ totals()[k] | number: '1.0-1' }} g</span>
+      <div class="macro-card">
+        <div class="macro-head">
+          <span class="muted small">{{ labels[k].label }}</span>
+          <span class="macro-total">{{ totals()[k] | number: '1.0-1' }} g</span>
+        </div>
+        <mat-progress-bar mode="determinate" [value]="macroProgress()[k]" />
       </div>
     }
   </div>
@@ -113,4 +110,8 @@
       }
     </section>
   }
+
+  <button mat-stroked-button type="button" class="skip-day-button" (click)="toggleSkippedDay()">
+    {{ skipped.value() ? 'Ta med dag igjen' : 'Hopp over dag' }}
+  </button>
 </div>

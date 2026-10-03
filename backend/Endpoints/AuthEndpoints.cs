@@ -17,9 +17,18 @@ public static class AuthEndpoints
         app.MapGet("/auth/providers", () => new { google = googleConfigured, dev = devLogin });
 
         app.MapGet("/auth/login", (string? returnUrl) =>
-            googleConfigured
-                ? Results.Challenge(new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl), IsPersistent = true })
-                : Results.Problem("Google-innlogging er ikke konfigurert.", statusCode: 503));
+        {
+            if (googleConfigured)
+                return Results.Challenge(new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl), IsPersistent = true });
+
+            if (devLogin)
+            {
+                var email = app.Configuration["Auth:DefaultDevEmail"] ?? "dev1@example.com";
+                return Results.Redirect($"/auth/dev-login?email={Uri.EscapeDataString(email)}&returnUrl={Uri.EscapeDataString(SafeReturnUrl(returnUrl))}");
+            }
+
+            return Results.Problem("Innlogging er ikke konfigurert på serveren.", statusCode: 503);
+        });
 
         app.MapPost("/auth/logout", async (HttpContext ctx) =>
         {

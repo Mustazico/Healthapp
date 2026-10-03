@@ -1,11 +1,14 @@
 import { effect, Injectable, signal } from '@angular/core';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type ThemePalette = 'blue' | 'green' | 'orange';
 const STORAGE_KEY = 'nutritrack.theme';
+const PALETTE_KEY = 'nutritrack.theme.palette';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
-  readonly mode = signal<ThemeMode>(this.read());
+  readonly mode = signal<ThemeMode>(this.readMode());
+  readonly palette = signal<ThemePalette>(this.readPalette());
   private readonly media = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   private readonly systemDark = signal(this.media?.matches ?? false);
 
@@ -14,10 +17,14 @@ export class ThemeService {
 
     effect(() => {
       const mode = this.mode();
+      const palette = this.palette();
+      const effectiveDark = mode === 'dark' || (mode === 'system' && this.systemDark());
       localStorage.setItem(STORAGE_KEY, mode);
+      localStorage.setItem(PALETTE_KEY, palette);
+      document.documentElement.dataset['theme'] = palette;
+      document.documentElement.dataset['colorMode'] = effectiveDark ? 'dark' : 'light';
       document.documentElement.style.colorScheme = mode === 'system' ? 'light dark' : mode;
-      const dark = mode === 'dark' || (mode === 'system' && this.systemDark());
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#111318' : '#f9f9ff');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', effectiveDark ? '#111318' : '#f9f9ff');
     });
   }
 
@@ -27,8 +34,19 @@ export class ThemeService {
     return mode === 'dark' || (mode === 'system' && this.systemDark());
   }
 
-  private read(): ThemeMode {
+  setPalette(palette: ThemePalette): void {
+    this.palette.set(palette);
+  }
+
+  private readMode(): ThemeMode {
     const v = localStorage.getItem(STORAGE_KEY);
     return v === 'light' || v === 'dark' ? v : 'system';
+  }
+
+  private readPalette(): ThemePalette {
+    const v = localStorage.getItem(PALETTE_KEY);
+    if (v === 'green') return 'green';
+    if (v === 'orange') return 'orange';
+    return 'blue';
   }
 }

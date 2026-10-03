@@ -7,13 +7,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace backend.Endpoints;
 
+public record MacroGoalsInput(
+    [Range(0, 1000)] double Carbs,
+    [Range(0, 500)] double Fat,
+    [Range(0, 300)] double SaturatedFat,
+    [Range(0, 500)] double Protein,
+    [Range(0, 200)] double Fiber,
+    [Range(0, 300)] double Sugar);
+
 public record ProfileInput(
     Sex Sex,
     DateOnly BirthDate,
     [Range(100, 250)] double HeightCm,
     [Range(1.1, 2.5)] double ActivityFactor,
     [Range(-1500, 1500)] double DeficitKcal,
-    [Range(0, 4)] double ProteinPerKg);
+    [Range(0, 4)] double ProteinPerKg,
+    MacroGoalsInput? MacroGoals);
 
 /// <param name="TdeeSource">"Fitbit" when based on measured burn, "Formula" when estimated.</param>
 public record ProfileDto(ProfileInput? Profile, double? LatestWeightKg, double? Bmr, double? Tdee, double? TargetKcal,
@@ -57,6 +66,15 @@ public static class ProfileEndpoints
             p.ActivityFactor = input.ActivityFactor;
             p.DeficitKcal = input.DeficitKcal;
             p.ProteinPerKg = input.ProteinPerKg;
+            p.Goals = new MacroGoals
+            {
+                Carbs = input.MacroGoals?.Carbs ?? p.Goals.Carbs,
+                Fat = input.MacroGoals?.Fat ?? p.Goals.Fat,
+                SaturatedFat = input.MacroGoals?.SaturatedFat ?? p.Goals.SaturatedFat,
+                Protein = input.MacroGoals?.Protein ?? p.Goals.Protein,
+                Fiber = input.MacroGoals?.Fiber ?? p.Goals.Fiber,
+                Sugar = input.MacroGoals?.Sugar ?? p.Goals.Sugar,
+            };
             await db.SaveChangesAsync();
             return Results.Ok(await BuildDto(db, user.UserId));
         });
@@ -127,7 +145,20 @@ public static class ProfileEndpoints
             .ToListAsync();
         var measured = EnergyCalculator.WearableAverage(energies, today);
 
-        var input = p is null ? null : new ProfileInput(p.Sex, p.BirthDate, p.HeightCm, p.ActivityFactor, p.DeficitKcal, p.ProteinPerKg);
+        var input = p is null ? null : new ProfileInput(
+            p.Sex,
+            p.BirthDate,
+            p.HeightCm,
+            p.ActivityFactor,
+            p.DeficitKcal,
+            p.ProteinPerKg,
+            new MacroGoalsInput(
+                p.Goals.Carbs,
+                p.Goals.Fat,
+                p.Goals.SaturatedFat,
+                p.Goals.Protein,
+                p.Goals.Fiber,
+                p.Goals.Sugar));
         double? bmr = p is not null && weight is not null
             ? EnergyCalculator.Bmr(p.Sex, weight.Value, p.HeightCm, EnergyCalculator.AgeAt(p.BirthDate, today))
             : null;

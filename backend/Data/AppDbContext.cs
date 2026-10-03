@@ -15,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser c
     public DbSet<WeightEntry> WeightEntries => Set<WeightEntry>();
     public DbSet<HealthConnection> HealthConnections => Set<HealthConnection>();
     public DbSet<DailyEnergy> DailyEnergies => Set<DailyEnergy>();
+    public DbSet<SkippedDay> SkippedDays => Set<SkippedDay>();
 
     // Referenced by query filters; EF re-evaluates it per query.
     private int CurrentUserId => currentUser.UserId;
@@ -77,6 +78,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser c
             e.ToTable("profiles");
             e.HasKey(p => p.UserId);
             e.Property(p => p.Sex).HasConversion<string>().HasMaxLength(10);
+            e.ComplexProperty(p => p.Goals, c =>
+            {
+                c.Property(g => g.Carbs).HasColumnName("goals_carbs");
+                c.Property(g => g.Fat).HasColumnName("goals_fat");
+                c.Property(g => g.SaturatedFat).HasColumnName("goals_saturated_fat");
+                c.Property(g => g.Protein).HasColumnName("goals_protein");
+                c.Property(g => g.Fiber).HasColumnName("goals_fiber");
+                c.Property(g => g.Sugar).HasColumnName("goals_sugar");
+            });
             e.HasOne<User>().WithOne().HasForeignKey<Profile>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(p => p.UserId == CurrentUserId);
         });
@@ -106,6 +116,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, ICurrentUser c
             e.Property(d => d.Source).HasMaxLength(20);
             e.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
             e.HasQueryFilter(d => d.UserId == CurrentUserId);
+        });
+
+        b.Entity<SkippedDay>(e =>
+        {
+            e.ToTable("skipped_days");
+            e.HasIndex(s => new { s.UserId, s.Date }).IsUnique();
+            e.HasOne<User>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasQueryFilter(s => s.UserId == CurrentUserId);
         });
     }
 }

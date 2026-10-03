@@ -1,4 +1,5 @@
 export const NUTRIENT_KEYS = ['kcal', 'protein', 'carbs', 'fat', 'saturatedFat', 'sugar', 'fiber', 'salt'] as const;
+export const OVERVIEW_NUTRIENT_KEYS = ['protein', 'carbs', 'fiber', 'fat', 'sugar', 'saturatedFat'] as const;
 export type NutrientKey = (typeof NUTRIENT_KEYS)[number];
 export type Nutrients = Record<NutrientKey, number>;
 

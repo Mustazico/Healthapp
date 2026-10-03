@@ -4,6 +4,7 @@ import {
   emptyNutrients,
   IngredientLike,
   Nutrients,
+  OVERVIEW_NUTRIENT_KEYS,
   recipePer100g,
   recipePortion,
   recipeTotal,
@@ -43,6 +44,10 @@ describe('nutrition', () => {
     expect(recipePortion(ingredients, 400, 200).kcal).toBeCloseTo(277);
     // Without cooked weight the raw sum (500 g) is used.
     expect(recipePortion(ingredients, null, 250).kcal).toBeCloseTo(277);
+  });
+
+  it('uses protein instead of sugar and sugar instead of salt in the homepage summary', () => {
+    expect(OVERVIEW_NUTRIENT_KEYS).toEqual(['carbs', 'fat', 'saturatedFat', 'protein', 'fiber', 'sugar']);
   });
 
   it('handles empty recipes', () => {

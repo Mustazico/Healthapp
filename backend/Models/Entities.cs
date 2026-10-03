@@ -71,6 +71,16 @@ public class LogEntry
 }
 
 // Private per user.
+public class MacroGoals
+{
+    public double Carbs { get; set; } = 250;
+    public double Fat { get; set; } = 80;
+    public double SaturatedFat { get; set; } = 25;
+    public double Protein { get; set; } = 120;
+    public double Fiber { get; set; } = 30;
+    public double Sugar { get; set; } = 50;
+}
+
 public class Profile
 {
     public int UserId { get; set; }
@@ -80,6 +90,7 @@ public class Profile
     public double ActivityFactor { get; set; } = 1.4;
     public double DeficitKcal { get; set; } = 500;
     public double ProteinPerKg { get; set; } = 1.6;
+    public MacroGoals Goals { get; set; } = new();
 }
 
 // Private per user.
@@ -114,4 +125,12 @@ public class DailyEnergy
     public int Steps { get; set; }
     public string Source { get; set; } = "Fitbit";
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Private per user. Marks a day as intentionally omitted from trend/stat calculations.
+public class SkippedDay
+{
+    public int Id { get; set; }
+    public int UserId { get; set; }
+    public DateOnly Date { get; set; }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003105012_AddSkippedDays")]
+    partial class AddSkippedDays
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
@@ -267,35 +270,6 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("TEXT");
-
-                    b.ComplexProperty(typeof(Dictionary<string, object>), "Goals", "backend.Models.Profile.Goals#MacroGoals", b1 =>
-                        {
-                            b1.IsRequired();
-
-                            b1.Property<double>("Carbs")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_carbs");
-
-                            b1.Property<double>("Fat")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_fat");
-
-                            b1.Property<double>("Fiber")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_fiber");
-
-                            b1.Property<double>("Protein")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_protein");
-
-                            b1.Property<double>("SaturatedFat")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_saturated_fat");
-
-                            b1.Property<double>("Sugar")
-                                .HasColumnType("REAL")
-                                .HasColumnName("goals_sugar");
-                        });
 
                     b.HasKey("UserId");
 

@@ -17,7 +17,9 @@ public class AuthSettings
     public bool EnableDevLogin { get; set; }
 
     public bool IsAllowed(string? email) =>
-        email is not null && AllowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase);
+        email is not null &&
+        (AllowedEmails.Contains(email, StringComparer.OrdinalIgnoreCase) ||
+         (EnableDevLogin && Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"));
 
     public bool IsAdmin(string? email) =>
         email is not null && AdminEmails.Contains(email, StringComparer.OrdinalIgnoreCase);

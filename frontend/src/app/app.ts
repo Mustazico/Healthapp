@@ -28,9 +28,9 @@ export class App {
 
   protected readonly nav = [
     { path: '/', icon: 'today', label: 'I dag', exact: true },
+    { path: '/stats', icon: 'insights', label: 'Statistikk', exact: false },
     { path: '/scan', icon: 'qr_code_scanner', label: 'Skann', exact: false },
     { path: '/recipes', icon: 'menu_book', label: 'Oppskrifter', exact: false },
-    { path: '/stats', icon: 'insights', label: 'Statistikk', exact: false },
     { path: '/more', icon: 'more_horiz', label: 'Mer', exact: false },
   ];
 

@@ -4,6 +4,7 @@ using backend.Auth;
 using backend.Data;
 using backend.Endpoints;
 using backend.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -16,6 +17,15 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var connectionString = builder.Configuration.GetConnectionString("Default")!;
+
+        // Containers lose the default key ring on redeploy, which would invalidate login cookies and stored Fitbit tokens.
+        var keysPath = builder.Configuration["DataProtection:KeysPath"];
+        if (!string.IsNullOrWhiteSpace(keysPath))
+        {
+            builder.Services.AddDataProtection()
+                .SetApplicationName("NutriTrack")
+                .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+        }
 
         builder.AddAppAuth();
         builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(connectionString));
@@ -106,6 +116,35 @@ public class Program
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
+
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var connection = db.Database.GetDbConnection();
+        connection.Open();
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "PRAGMA table_info('profiles');";
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                var name = reader.GetString(reader.GetOrdinal("name"));
+                columns.Add(name);
+            }
+        }
+
+        foreach (var column in new[]
+                 {
+                     (Name: "goals_carbs", Default: "250"),
+                     (Name: "goals_fat", Default: "80"),
+                     (Name: "goals_saturated_fat", Default: "25"),
+                     (Name: "goals_protein", Default: "120"),
+                     (Name: "goals_fiber", Default: "30"),
+                     (Name: "goals_sugar", Default: "50"),
+                 })
+        {
+            if (columns.Contains(column.Name)) continue;
+            db.Database.ExecuteSqlRaw($"ALTER TABLE profiles ADD COLUMN {column.Name} REAL NOT NULL DEFAULT {column.Default};");
+        }
+
         // WAL is unreliable on Azure App Service's network-backed /home share.
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=DELETE;");
     }

@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { MatButton, MatIconButton } from '@angular/material/button';
@@ -9,16 +9,17 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { FitbitApi, LogApi, ProfileApi } from '../../core/api';
+import { FitbitApi, LogApi, ProfileApi, SkipDayApi } from '../../core/api';
 import { addDays, formatDay, isIsoDate, todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/errors';
 import { LogEntry, Meal, MEALS } from '../../core/models';
-import { NUTRIENT_LABELS, sum } from '../../core/nutrition';
+import { MacroGoalService } from '../../core/macro-goals';
+import { NUTRIENT_LABELS, OVERVIEW_NUTRIENT_KEYS, sum } from '../../core/nutrition';
 import { EntryEditDialog, EntryEditResult } from './entry-edit-dialog';
 
 @Component({
   selector: 'app-today',
-  imports: [DecimalPipe, DatePipe, RouterLink, MatIcon, MatIconButton, MatButton, MatProgressBar, MatProgressSpinner],
+  imports: [DecimalPipe, RouterLink, MatIcon, MatIconButton, MatButton, MatProgressBar, MatProgressSpinner],
   templateUrl: './today.html',
   styleUrl: './today.scss',
 })
@@ -29,9 +30,11 @@ export class TodayPage {
   private logApi = inject(LogApi);
   private profileApi = inject(ProfileApi);
   private fitbitApi = inject(FitbitApi);
+  private skipDayApi = inject(SkipDayApi);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
+  private macroGoalsService = inject(MacroGoalService);
 
   protected readonly meals = MEALS;
   protected readonly labels = NUTRIENT_LABELS;
@@ -53,6 +56,10 @@ export class TodayPage {
   protected readonly measured = computed(() => (this.energy.value()?.measured ? this.energy.value()! : null));
   protected readonly isToday = computed(() => this.day() === todayIso());
   protected readonly refreshing = signal(false);
+  protected readonly skipped = rxResource({
+    params: () => this.day(),
+    stream: ({ params }) => this.skipDayApi.isSkipped(params),
+  });
 
   protected readonly totals = computed(() => sum((this.entries.value() ?? []).map((e) => e.nutrients)));
   protected readonly byMeal = computed(() => {
@@ -77,7 +84,17 @@ export class TodayPage {
     const t = this.proteinTarget();
     return t ? Math.min(100, (this.totals().protein / t) * 100) : 0;
   });
-  protected readonly macroKeys = ['carbs', 'fat', 'saturatedFat', 'sugar', 'fiber', 'salt'] as const;
+  protected readonly macroKeys = OVERVIEW_NUTRIENT_KEYS;
+  protected readonly macroGoals = this.macroGoalsService.goals;
+  protected readonly macroProgress = computed(() => {
+    return Object.fromEntries(
+      this.macroKeys.map((key) => [key, Math.min(100, (this.totals()[key] / (this.macroGoals()[key] || 1)) * 100)]),
+    ) as Record<(typeof OVERVIEW_NUTRIENT_KEYS)[number], number>;
+  });
+
+  protected adjustMacroGoal(key: (typeof OVERVIEW_NUTRIENT_KEYS)[number], delta: number): void {
+    this.macroGoalsService.setGoal(key, (this.macroGoals()[key] ?? 0) + delta);
+  }
 
   protected shift(days: number): void {
     this.goTo(addDays(this.day(), days));
@@ -85,6 +102,20 @@ export class TodayPage {
 
   protected goToday(): void {
     this.goTo(todayIso());
+  }
+
+  protected async toggleSkippedDay(): Promise<void> {
+    const date = this.day();
+    try {
+      if (this.skipped.value()) {
+        await firstValueFrom(this.skipDayApi.clear(date));
+      } else {
+        await firstValueFrom(this.skipDayApi.set(date));
+      }
+      this.skipped.reload();
+    } catch (err) {
+      this.snack.open(errorMessage(err), 'OK', { duration: 4000 });
+    }
   }
 
   protected async refreshEnergy(): Promise<void> {

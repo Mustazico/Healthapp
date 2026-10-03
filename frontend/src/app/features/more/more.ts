@@ -15,8 +15,9 @@ import { FitbitApi, ProfileApi } from '../../core/api';
 import { AuthService } from '../../core/auth';
 import { addDays, todayIso } from '../../core/dates';
 import { errorMessage } from '../../core/errors';
+import { MacroGoalKey, MacroGoalService } from '../../core/macro-goals';
 import { Profile } from '../../core/models';
-import { ThemeMode, ThemeService } from '../../core/theme';
+import { ThemeMode, ThemePalette, ThemeService } from '../../core/theme';
 import { DecimalInput } from '../../shared/decimal-input';
 import { PageHeader } from '../../shared/page-header';
 
@@ -83,6 +84,7 @@ export class MorePage {
 
   protected readonly auth = inject(AuthService);
   protected readonly theme = inject(ThemeService);
+  protected readonly macroGoals = inject(MacroGoalService);
   private api = inject(ProfileApi);
   private fitbitApi = inject(FitbitApi);
   private router = inject(Router);
@@ -153,6 +155,19 @@ export class MorePage {
 
   protected setTheme(mode: ThemeMode): void {
     this.theme.mode.set(mode);
+  }
+
+  protected setPalette(palette: ThemePalette): void {
+    this.theme.palette.set(palette);
+  }
+
+  protected setMacroGoal(key: MacroGoalKey, value: number | string): void {
+    const parsed = Number(value);
+    this.macroGoals.setGoal(key, Number.isFinite(parsed) ? parsed : 0);
+  }
+
+  protected resetMacroGoals(): void {
+    this.macroGoals.reset();
   }
 
   protected async saveProfile(f: NgForm): Promise<void> {

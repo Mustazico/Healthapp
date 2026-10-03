@@ -1,19 +1,162 @@
 @use '@angular/material' as mat;
 
 html {
+  --brand-primary: #7aa9f8;
+  --brand-primary-strong: #5e8fe9;
+  --brand-primary-soft: #edf4ff;
+  --brand-accent: #a6d8ff;
+  --brand-accent-soft: #edf8ff;
+
+  --mat-sys-background: #f8fbff;
+  --mat-sys-on-background: #101827;
+  --mat-sys-surface: #f8fbff;
+  --mat-sys-on-surface: #101827;
+  --mat-sys-on-surface-variant: #4a5b76;
+  --mat-sys-surface-bright: #ffffff;
+  --mat-sys-surface-dim: #edf4ff;
+  --mat-sys-surface-container: #edf6ff;
+  --mat-sys-surface-container-low: #f4f9ff;
+  --mat-sys-surface-container-high: #e8f2ff;
+  --mat-sys-primary: var(--brand-primary);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--brand-primary-soft);
+  --mat-sys-on-primary-container: #0f172a;
+  --mat-sys-secondary-container: #eaf3ff;
+  --mat-sys-on-secondary-container: #12304a;
+  --mat-sys-tertiary: var(--brand-accent);
+  --mat-sys-tertiary-container: var(--brand-accent-soft);
+  --mat-sys-on-tertiary: #082f49;
+  --mat-sys-outline-variant: #d2e3ff;
+
   height: 100%;
   // Effective light/dark is set at runtime by ThemeService via `color-scheme`.
   color-scheme: light dark;
   @include mat.theme(
     (
       color: (
-        primary: mat.$green-palette,
-        tertiary: mat.$orange-palette,
+        primary: mat.$blue-palette,
+        tertiary: mat.$cyan-palette,
       ),
       typography: Roboto,
       density: 0,
     )
   );
+}
+
+html[data-theme='green'] {
+  --brand-primary: #62bf8f;
+  --brand-primary-strong: #4aa97a;
+  --brand-primary-soft: #e6faf0;
+  --brand-accent: #8ad8af;
+  --brand-accent-soft: #edfdf4;
+
+  --mat-sys-background: #f7fff9;
+  --mat-sys-on-background: #123126;
+  --mat-sys-surface: #f7fff9;
+  --mat-sys-on-surface: #123126;
+  --mat-sys-on-surface-variant: #49675d;
+  --mat-sys-surface-bright: #ffffff;
+  --mat-sys-surface-dim: #eefcf5;
+  --mat-sys-surface-container: #eefcf5;
+  --mat-sys-surface-container-low: #f4fff8;
+  --mat-sys-surface-container-high: #e3f9ed;
+  --mat-sys-primary: var(--brand-primary);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--brand-primary-soft);
+  --mat-sys-on-primary-container: #123126;
+  --mat-sys-secondary-container: #ebfff6;
+  --mat-sys-on-secondary-container: #123126;
+  --mat-sys-tertiary: var(--brand-accent);
+  --mat-sys-tertiary-container: var(--brand-accent-soft);
+  --mat-sys-on-tertiary: #123126;
+  --mat-sys-outline-variant: #d4f3e0;
+}
+
+html[data-theme='orange'] {
+  --brand-primary: #f2a96b;
+  --brand-primary-strong: #e38d46;
+  --brand-primary-soft: #fff1e5;
+  --brand-accent: #ffc88a;
+  --brand-accent-soft: #fff5ea;
+
+  --mat-sys-background: #fffaf6;
+  --mat-sys-on-background: #3b2414;
+  --mat-sys-surface: #fffaf6;
+  --mat-sys-on-surface: #3b2414;
+  --mat-sys-on-surface-variant: #725b45;
+  --mat-sys-surface-bright: #ffffff;
+  --mat-sys-surface-dim: #fff3eb;
+  --mat-sys-surface-container: #fff3eb;
+  --mat-sys-surface-container-low: #fffaf5;
+  --mat-sys-surface-container-high: #ffebdc;
+  --mat-sys-primary: var(--brand-primary);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--brand-primary-soft);
+  --mat-sys-on-primary-container: #3b2414;
+  --mat-sys-secondary-container: #fff4ea;
+  --mat-sys-on-secondary-container: #3b2414;
+  --mat-sys-tertiary: var(--brand-accent);
+  --mat-sys-tertiary-container: var(--brand-accent-soft);
+  --mat-sys-on-tertiary: #3b2414;
+  --mat-sys-outline-variant: #f7d7b9;
+}
+
+html[data-color-mode='dark'][data-theme='green'] {
+  --brand-primary: #7eddb0;
+  --brand-primary-strong: #9fe8c1;
+  --brand-primary-soft: #173a2b;
+  --brand-accent: #a9efc6;
+  --brand-accent-soft: #1b4336;
+
+  --mat-sys-background: #0d1713;
+  --mat-sys-on-background: #eafaf2;
+  --mat-sys-surface: #111b17;
+  --mat-sys-on-surface: #ebfff4;
+  --mat-sys-on-surface-variant: #b7d8c6;
+  --mat-sys-surface-bright: #1a2d26;
+  --mat-sys-surface-dim: #0e1915;
+  --mat-sys-surface-container: #16261e;
+  --mat-sys-surface-container-low: #101b16;
+  --mat-sys-surface-container-high: #1d332b;
+  --mat-sys-primary: var(--brand-primary);
+  --mat-sys-on-primary: #062d1c;
+  --mat-sys-primary-container: var(--brand-primary-soft);
+  --mat-sys-on-primary-container: #dffef0;
+  --mat-sys-secondary-container: #183c2f;
+  --mat-sys-on-secondary-container: #ecfff2;
+  --mat-sys-tertiary: var(--brand-accent);
+  --mat-sys-tertiary-container: var(--brand-accent-soft);
+  --mat-sys-on-tertiary: #ddfff0;
+  --mat-sys-outline-variant: #2d4f43;
+}
+
+html[data-color-mode='dark'][data-theme='orange'] {
+  --brand-primary: #f6b67e;
+  --brand-primary-strong: #ffc58d;
+  --brand-primary-soft: #412b1d;
+  --brand-accent: #ffd2a0;
+  --brand-accent-soft: #523322;
+
+  --mat-sys-background: #1a120d;
+  --mat-sys-on-background: #fff3eb;
+  --mat-sys-surface: #211711;
+  --mat-sys-on-surface: #fff2e9;
+  --mat-sys-on-surface-variant: #e8c3a3;
+  --mat-sys-surface-bright: #38271d;
+  --mat-sys-surface-dim: #1b120f;
+  --mat-sys-surface-container: #2e1f17;
+  --mat-sys-surface-container-low: #241a14;
+  --mat-sys-surface-container-high: #3f2c22;
+  --mat-sys-primary: var(--brand-primary);
+  --mat-sys-on-primary: #2a170c;
+  --mat-sys-primary-container: var(--brand-primary-soft);
+  --mat-sys-on-primary-container: #fff0df;
+  --mat-sys-secondary-container: #4d3122;
+  --mat-sys-on-secondary-container: #fff3e5;
+  --mat-sys-tertiary: var(--brand-accent);
+  --mat-sys-tertiary-container: var(--brand-accent-soft);
+  --mat-sys-on-tertiary: #fff0de;
+  --mat-sys-outline-variant: #6b4b3a;
 }
 
 body {
@@ -94,7 +237,7 @@ h3 { font: var(--mat-sys-title-small); }
   &:last-child { border-bottom: 0; }
   .grow { flex: 1; min-width: 0; }
   .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: #fff; }
+  img { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; background: var(--mat-sys-surface-container-low); }
 }
 
 .fab {

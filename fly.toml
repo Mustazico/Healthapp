@@ -1,0 +1,43 @@
+# fly.toml app configuration file generated for nutritrack-eirik on 2026-10-03T12:05:59+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'nutritrack-eirik'
+primary_region = 'arn'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  ASPNETCORE_ENVIRONMENT = 'Production'
+  ASPNETCORE_FORWARDEDHEADERS_ENABLED = 'true'
+  ConnectionStrings__Default = 'Data Source=/data/nutritrack.db'
+  DataProtection__KeysPath = '/data/keys'
+  GoogleHealth__RedirectUri = 'https://nutritrack-eirik.fly.dev/api/fitbit/callback'
+  TZ = 'Europe/Oslo'
+
+[[mounts]]
+  source = 'data'
+  destination = '/data'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'off'
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/'
+
+    [http_service.checks.headers]
+      X-Forwarded-Proto = 'https'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

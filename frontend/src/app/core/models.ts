@@ -8,7 +8,7 @@ export const MEALS: { key: Meal; label: string; icon: string }[] = [
   { key: 'Breakfast', label: 'Frokost', icon: 'free_breakfast' },
   { key: 'Lunch', label: 'Lunsj', icon: 'lunch_dining' },
   { key: 'Dinner', label: 'Middag', icon: 'dinner_dining' },
-  { key: 'Supper', label: 'Kveldsmat', icon: 'bakery_dining' },
+  { key: 'Supper', label: 'Kvelds', icon: 'bakery_dining' },
   { key: 'Snacks', label: 'Snacks', icon: 'cookie' },
 ];
 
@@ -113,6 +113,15 @@ export interface LogEntry {
 
 export type LogInput = Omit<LogEntry, 'id'>;
 
+export interface MacroGoals {
+  carbs: number;
+  fat: number;
+  saturatedFat: number;
+  protein: number;
+  fiber: number;
+  sugar: number;
+}
+
 export interface Profile {
   sex: Sex;
   birthDate: string;
@@ -120,6 +129,7 @@ export interface Profile {
   activityFactor: number;
   deficitKcal: number;
   proteinPerKg: number;
+  macroGoals?: MacroGoals;
 }
 
 export type TdeeSource = 'Fitbit' | 'Formula';

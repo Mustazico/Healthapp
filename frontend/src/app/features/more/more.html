@@ -133,12 +133,64 @@
   </section>
 
   <section class="surface-card">
+    <h2>Målkategorier</h2>
+    <div class="macro-goal-grid">
+      <mat-form-field>
+        <mat-label>Karbohydrater</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().carbs" (ngModelChange)="setMacroGoal('carbs', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Fett</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().fat" (ngModelChange)="setMacroGoal('fat', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Mettet fett</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().saturatedFat" (ngModelChange)="setMacroGoal('saturatedFat', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Protein</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().protein" (ngModelChange)="setMacroGoal('protein', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Fiber</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().fiber" (ngModelChange)="setMacroGoal('fiber', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+      <mat-form-field>
+        <mat-label>Sukker</mat-label>
+        <input matInput type="number" min="0" [ngModel]="macroGoals.goals().sugar" (ngModelChange)="setMacroGoal('sugar', $event)" />
+        <span matSuffix class="suffix">g</span>
+      </mat-form-field>
+    </div>
+    <div class="row actions">
+      <button mat-stroked-button type="button" (click)="resetMacroGoals()"><mat-icon>restart_alt</mat-icon> Tilbakestill mål</button>
+    </div>
+  </section>
+
+  <section class="surface-card">
     <h2>Utseende</h2>
-    <mat-button-toggle-group class="theme" [value]="theme.mode()" (change)="setTheme($event.value)" hideSingleSelectionIndicator>
-      <mat-button-toggle value="system"><mat-icon>brightness_auto</mat-icon> System</mat-button-toggle>
-      <mat-button-toggle value="light"><mat-icon>light_mode</mat-icon> Lys</mat-button-toggle>
-      <mat-button-toggle value="dark"><mat-icon>dark_mode</mat-icon> Mørk</mat-button-toggle>
-    </mat-button-toggle-group>
+    <div class="theme-groups">
+      <div class="theme-group">
+        <label class="muted small">Farge</label>
+        <mat-button-toggle-group class="theme" [value]="theme.palette()" (change)="setPalette($event.value)" hideSingleSelectionIndicator>
+          <mat-button-toggle value="blue">Blå</mat-button-toggle>
+          <mat-button-toggle value="green">Grønn</mat-button-toggle>
+          <mat-button-toggle value="orange">Høst</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+      <div class="theme-group">
+        <label class="muted small">Lys</label>
+        <mat-button-toggle-group class="theme" [value]="theme.mode()" (change)="setTheme($event.value)" hideSingleSelectionIndicator>
+          <mat-button-toggle value="system"><mat-icon>brightness_auto</mat-icon> System</mat-button-toggle>
+          <mat-button-toggle value="light"><mat-icon>light_mode</mat-icon> Lys</mat-button-toggle>
+          <mat-button-toggle value="dark"><mat-icon>dark_mode</mat-icon> Mørk</mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    </div>
   </section>
 
   <section class="surface-card links">

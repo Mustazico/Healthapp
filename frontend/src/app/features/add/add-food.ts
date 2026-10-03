@@ -60,9 +60,14 @@ import { PageHeader } from '../../shared/page-header';
 
           <div class="fields">
             <mat-form-field>
-              <mat-label>Mengde</mat-label>
-              <input matInput appDecimal name="grams" [ngModel]="grams()" (ngModelChange)="grams.set($event)" />
-              <span matSuffix class="suffix">g</span>
+              <mat-label>{{ amountMode() === 'count' ? 'Antall (stk)' : 'Mengde (g)' }}</mat-label>
+              <input
+                matInput
+                appDecimal
+                [ngModel]="amountMode() === 'count' ? countInput() : gramsInput()"
+                (ngModelChange)="amountMode() === 'count' ? countInput.set($event) : gramsInput.set($event)"
+              />
+              <span matSuffix class="suffix">{{ amountMode() === 'count' ? 'stk' : 'g' }}</span>
             </mat-form-field>
             <mat-form-field>
               <mat-label>Måltid</mat-label>
@@ -74,11 +79,25 @@ import { PageHeader } from '../../shared/page-header';
             </mat-form-field>
           </div>
 
-          <mat-chip-set aria-label="Hurtigvalg for mengde">
-            @for (g of quickGrams(); track g.value) {
-              <mat-chip (click)="grams.set(g.value)">{{ g.label }}</mat-chip>
-            }
-          </mat-chip-set>
+          @if (food.value()?.servingGrams; as serving) {
+            <div class="mode-hint muted">
+              {{ amountMode() === 'count' ? 'Du skriver antall porsjoner.' : 'Du skriver gram.' }}
+              1 porsjon = {{ serving }} g.
+            </div>
+            <mat-chip-set aria-label="Hurtigvalg for mengde">
+              <mat-chip (click)="amountMode.set('count')">Antall (stk)</mat-chip>
+              <mat-chip (click)="amountMode.set('grams')">Mengde (g)</mat-chip>
+              @for (option of quickAmounts(serving); track option.value) {
+                <mat-chip (click)="amountMode.set('count'); countInput.set(option.value)">{{ option.label }}</mat-chip>
+              }
+            </mat-chip-set>
+          } @else {
+            <mat-chip-set aria-label="Hurtigvalg for mengde">
+              @for (g of quickGrams(); track g.value) {
+                <mat-chip (click)="amountMode.set('grams'); gramsInput.set(g.value)">{{ g.label }}</mat-chip>
+              }
+            </mat-chip-set>
+          }
 
           <app-nutrient-grid [nutrients]="nutrients()" />
 
@@ -117,20 +136,43 @@ export class AddFoodPage {
     params: () => Number(this.id()),
     stream: ({ params }) => this.foodApi.get(params),
   });
-  protected readonly grams = linkedSignal<number | null>(() => this.food.value()?.servingGrams ?? 100);
+  protected readonly amountMode = linkedSignal<'grams' | 'count'>(() => {
+    const serving = this.food.value()?.servingGrams;
+    return serving && serving > 0 ? 'count' : 'grams';
+  });
+  protected readonly gramsInput = linkedSignal<number | null>(() => this.food.value()?.servingGrams ?? 100);
+  protected readonly countInput = linkedSignal<number | null>(() => {
+    const serving = this.food.value()?.servingGrams;
+    const grams = this.gramsInput() ?? 0;
+    return serving && serving > 0 ? grams / serving : null;
+  });
   protected readonly meal = linkedSignal<Meal>(() => {
     const m = this.mealParam();
     return isMeal(m) ? m : defaultMealForNow();
   });
   protected readonly saving = signal(false);
 
+  protected readonly grams = computed(() => {
+    const serving = this.food.value()?.servingGrams;
+    if (this.amountMode() === 'count' && serving && serving > 0) {
+      return (this.countInput() ?? 0) * serving;
+    }
+    return this.gramsInput() ?? 0;
+  });
+
   protected readonly nutrients = computed(() => scale(this.food.value()?.per100g ?? emptyNutrients(), this.grams() ?? 0));
   protected readonly valid = computed(() => (this.grams() ?? 0) > 0);
   protected readonly quickGrams = computed(() => {
-    const serving = this.food.value()?.servingGrams;
     const base = [50, 100, 150, 200].map((g) => ({ value: g, label: `${g} g` }));
-    return serving ? [{ value: serving, label: `1 porsjon (${serving} g)` }, ...base] : base;
+    return base;
   });
+
+  protected readonly quickAmounts = (serving: number) => [
+    { value: 1, label: `1 porsjon (${serving} g)` },
+    { value: 2, label: '2 porsjoner' },
+    { value: 3, label: '3 porsjoner' },
+    { value: 5, label: '5 porsjoner' },
+  ];
 
   protected async add(): Promise<void> {
     const food = this.food.value();
