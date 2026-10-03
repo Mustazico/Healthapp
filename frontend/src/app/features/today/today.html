@@ -69,7 +69,7 @@
       <div class="macro-card">
         <div class="macro-head">
           <span class="muted small">{{ labels[k].label }}</span>
-          <span class="macro-total">{{ totals()[k] | number: '1.0-1' }} g</span>
+          <span class="macro-total">{{ totals()[k] | number: '1.0-1' }} / {{ macroGoals()[k] | number: '1.0-0' }} g</span>
         </div>
         <mat-progress-bar mode="determinate" [value]="macroProgress()[k]" />
       </div>
