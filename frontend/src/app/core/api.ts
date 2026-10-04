@@ -31,6 +31,9 @@ export class FoodApi {
   lookup(ean: string): Observable<LookupResult> {
     return this.http.get<LookupResult>(`/api/foods/lookup/${encodeURIComponent(ean)}`);
   }
+  searchOnline(q: string): Observable<LookupResult[]> {
+    return this.http.get<LookupResult[]>('/api/foods/search-online', { params: { q } });
+  }
   create(input: FoodInput): Observable<Food> {
     return this.http.post<Food>('/api/foods', input);
   }

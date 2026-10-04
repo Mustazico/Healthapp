@@ -5,7 +5,7 @@ namespace backend.Services;
 public record FoodDraft(
     string Name,
     string? Brand,
-    string Ean,
+    string? Ean,
     string? ImageUrl,
     double? ServingGrams,
     Nutrients Per100g,

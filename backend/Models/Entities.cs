@@ -1,6 +1,6 @@
 namespace backend.Models;
 
-public enum FoodSource { Manual, Kassalapp, OpenFoodFacts }
+public enum FoodSource { Manual, Kassalapp, OpenFoodFacts, Matvaretabellen }
 
 public enum Meal { Breakfast, Lunch, Dinner, Supper, Snacks }
 

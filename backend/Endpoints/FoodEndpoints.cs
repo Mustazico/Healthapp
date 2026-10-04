@@ -52,6 +52,13 @@ public static class FoodEndpoints
             return await lookup.LookupAsync(ean, ct) is { } result ? Results.Ok(result) : Results.NotFound();
         });
 
+        g.MapGet("/search-online", async (string? q, FoodLookupService lookup, CancellationToken ct) =>
+        {
+            var term = q?.Trim() ?? "";
+            if (term.Length is < 2 or > 100) return Results.BadRequest(new { error = "Søket må være 2–100 tegn." });
+            return Results.Ok(await lookup.SearchOnlineAsync(term, ct));
+        });
+
         g.MapPost("/", async (FoodInput input, AppDbContext db, ICurrentUser user) =>
         {
             if (input.Ean is not null && await db.Foods.AsNoTracking().FirstOrDefaultAsync(f => f.Ean == input.Ean) is { } existing)

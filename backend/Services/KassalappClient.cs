@@ -62,6 +62,47 @@ public class KassalappClient(HttpClient http, IOptions<KassalappOptions> options
         }
     }
 
+    /// <summary>Returns null when the search failed, so callers can avoid caching the failure.</summary>
+    public async Task<IReadOnlyList<FoodDraft>?> SearchAsync(string query, int size, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(options.Value.ApiKey)) return [];
+        try
+        {
+            using var res = await http.GetAsync($"products?search={Uri.EscapeDataString(query)}&size={size}&unique=1", ct);
+            if (!res.IsSuccessStatusCode)
+            {
+                logger.LogWarning("Kassalapp search returned {Status}", (int)res.StatusCode);
+                return null;
+            }
+
+            using var doc = JsonDocument.Parse(await res.Content.ReadAsStreamAsync(ct));
+            if (!doc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array) return [];
+
+            var drafts = new List<FoodDraft>();
+            var seenEans = new HashSet<string>();
+            foreach (var p in data.EnumerateArray())
+            {
+                var name = Str(p, "name")?.Trim();
+                if (string.IsNullOrEmpty(name)) continue;
+                var ean = Str(p, "ean") is { } e && FoodLookupService.IsValidEan(e) ? e : null;
+                if (ean is not null && !seenEans.Add(ean)) continue;
+
+                var nb = new NutrientsBuilder();
+                if (p.TryGetProperty("nutrition", out var n) && n.ValueKind == JsonValueKind.Array) ParseNutrition(n, nb);
+                var (nutrients, missing) = nb.Build();
+                var brand = Str(p, "brand")?.Trim();
+                drafts.Add(new FoodDraft(name, string.IsNullOrEmpty(brand) ? null : brand, ean,
+                    NutrientsBuilder.HttpUrlOrNull(Str(p, "image")), null, nutrients, FoodSource.Kassalapp, missing));
+            }
+            return drafts;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            logger.LogWarning(ex, "Kassalapp search failed");
+            return null;
+        }
+    }
+
     private static void ParseNutrition(JsonElement items, NutrientsBuilder nb)
     {
         double? kj = null;

@@ -11,7 +11,7 @@ import { ScanFlow } from '../../shared/scan-flow';
   template: `
     <div class="page">
       <app-page-header title="Skann vare" />
-      <app-scan-flow (done)="done($event.food, $event.addToLog)" />
+      <app-scan-flow [allowAlternatives]="true" (done)="done($event.food, $event.addToLog)" />
     </div>
   `,
 })

@@ -45,6 +45,12 @@ public class Program
             http.Timeout = TimeSpan.FromSeconds(8);
             http.DefaultRequestHeaders.UserAgent.ParseAdd("NutriTrack/1.0 (personal nutrition tracker)");
         });
+        builder.Services.AddHttpClient<MatvaretabellenClient>(http =>
+        {
+            http.BaseAddress = new Uri("https://www.matvaretabellen.no/");
+            // The full table is ~13 MB.
+            http.Timeout = TimeSpan.FromSeconds(60);
+        });
         builder.Services.AddScoped<FoodLookupService>();
 
         builder.Services.Configure<GoogleHealthOptions>(builder.Configuration.GetSection("GoogleHealth"));

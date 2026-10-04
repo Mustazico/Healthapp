@@ -1,7 +1,7 @@
 import { Nutrients } from './nutrition';
 
 export type Meal = 'Breakfast' | 'Lunch' | 'Dinner' | 'Supper' | 'Snacks';
-export type FoodSource = 'Manual' | 'Kassalapp' | 'OpenFoodFacts';
+export type FoodSource = 'Manual' | 'Kassalapp' | 'OpenFoodFacts' | 'Matvaretabellen';
 export type Sex = 'Male' | 'Female';
 
 export const MEALS: { key: Meal; label: string; icon: string }[] = [
