@@ -17,7 +17,8 @@ public class MatvaretabellenClient(HttpClient http, IMemoryCache cache, ILogger<
         var terms = Normalize(query).Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length == 0) return [];
 
-        var foods = await GetFoodsAsync(ct);
+        var json = await GetFoodsAsync(ct);
+        var foods = SearchFoods(json, terms);
         var phrase = string.Join(' ', terms);
         return foods
             .Where(f => terms.All(f.SearchText.Contains))
@@ -37,18 +38,18 @@ public class MatvaretabellenClient(HttpClient http, IMemoryCache cache, ILogger<
         return name.Split(' ').Any(w => w.StartsWith(firstTerm)) ? 2 : 3;
     }
 
-    private async Task<List<Entry>> GetFoodsAsync(CancellationToken ct)
+    private async Task<byte[]> GetFoodsAsync(CancellationToken ct)
     {
-        if (cache.TryGetValue(CacheKey, out List<Entry>? foods) && foods is not null) return foods;
+        if (cache.TryGetValue(CacheKey, out byte[]? json) && json is not null) return json;
 
         await LoadGate.WaitAsync(ct);
         try
         {
-            if (cache.TryGetValue(CacheKey, out foods) && foods is not null) return foods;
-            foods = await DownloadAsync(ct);
+            if (cache.TryGetValue(CacheKey, out json) && json is not null) return json;
+            json = await DownloadAsync(ct);
             // The table is updated yearly; don't cache failures so the next search retries.
-            if (foods.Count > 0) cache.Set(CacheKey, foods, TimeSpan.FromDays(7));
-            return foods;
+            if (json.Length > 0) cache.Set(CacheKey, json, TimeSpan.FromDays(7));
+            return json;
         }
         finally
         {
@@ -56,7 +57,7 @@ public class MatvaretabellenClient(HttpClient http, IMemoryCache cache, ILogger<
         }
     }
 
-    private async Task<List<Entry>> DownloadAsync(CancellationToken ct)
+    private async Task<byte[]> DownloadAsync(CancellationToken ct)
     {
         try
         {
@@ -67,58 +68,98 @@ public class MatvaretabellenClient(HttpClient http, IMemoryCache cache, ILogger<
                 return [];
             }
 
-            using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-            if (!doc.RootElement.TryGetProperty("foods", out var list) || list.ValueKind != JsonValueKind.Array) return [];
-
-            var foods = new List<Entry>();
-            foreach (var f in list.EnumerateArray())
-            {
-                var name = Str(f, "foodName")?.Trim();
-                if (string.IsNullOrEmpty(name)) continue;
-
-                var values = new Dictionary<string, double>();
-                if (f.TryGetProperty("constituents", out var cs) && cs.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var c in cs.EnumerateArray())
-                    {
-                        if (Str(c, "nutrientId") is { } id && c.TryGetProperty("quantity", out var q) && q.ValueKind == JsonValueKind.Number)
-                            values[id] = q.GetDouble();
-                    }
-                }
-                double? V(string id) => values.TryGetValue(id, out var v) ? v : null;
-
-                var nb = new NutrientsBuilder
-                {
-                    Kcal = f.TryGetProperty("calories", out var cal) && cal.TryGetProperty("quantity", out var k) && k.ValueKind == JsonValueKind.Number
-                        ? k.GetDouble()
-                        : null,
-                    Protein = V("Protein"),
-                    Carbs = V("Karbo"),
-                    Fat = V("Fett"),
-                    SaturatedFat = V("Mettet"),
-                    // "Sukker" is added sugar only; "Mono+Di" matches "sukkerarter" on labels.
-                    Sugar = V("Mono+Di"),
-                    Fiber = V("Fiber"),
-                    Salt = V("NaCl"),
-                };
-                if (nb.Kcal is null) continue;
-
-                var (nutrients, missing) = nb.Build();
-                var keywords = f.TryGetProperty("searchKeywords", out var kw) && kw.ValueKind == JsonValueKind.Array
-                    ? string.Join(' ', kw.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()))
-                    : "";
-                var normalizedName = Normalize(name);
-                foods.Add(new Entry(normalizedName, $"{normalizedName} {Normalize(keywords)}",
-                    new FoodDraft(name, null, null, null, PortionGrams(f), nutrients, FoodSource.Matvaretabellen, missing)));
-            }
-            logger.LogInformation("Loaded {Count} foods from Matvaretabellen", foods.Count);
-            return foods;
+            return await res.Content.ReadAsByteArrayAsync(ct);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
         {
             logger.LogWarning(ex, "Matvaretabellen download failed");
             return [];
         }
+    }
+
+    private static List<Entry> SearchFoods(byte[] json, string[] terms)
+    {
+        var reader = new Utf8JsonReader(json);
+        if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject) return [];
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndObject) break;
+            if (reader.TokenType != JsonTokenType.PropertyName) continue;
+
+            var property = reader.GetString();
+            if (!reader.Read()) break;
+            if (property != "foods" || reader.TokenType != JsonTokenType.StartArray)
+            {
+                reader.Skip();
+                continue;
+            }
+
+            var foods = new List<Entry>();
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    reader.Skip();
+                    continue;
+                }
+
+                using var food = JsonDocument.ParseValue(ref reader);
+                if (Matches(food.RootElement, terms) && ParseFood(food.RootElement) is { } entry) foods.Add(entry);
+            }
+            return foods;
+        }
+        return [];
+    }
+
+    private static bool Matches(JsonElement f, string[] terms)
+    {
+        var name = Normalize(Str(f, "foodName") ?? "");
+        var keywords = f.TryGetProperty("searchKeywords", out var kw) && kw.ValueKind == JsonValueKind.Array
+            ? Normalize(string.Join(' ', kw.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString())))
+            : "";
+        return terms.All(term => name.Contains(term, StringComparison.Ordinal) || keywords.Contains(term, StringComparison.Ordinal));
+    }
+
+    private static Entry? ParseFood(JsonElement f)
+    {
+        var name = Str(f, "foodName")?.Trim();
+        if (string.IsNullOrEmpty(name)) return null;
+
+        var values = new Dictionary<string, double>();
+        if (f.TryGetProperty("constituents", out var cs) && cs.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var c in cs.EnumerateArray())
+            {
+                if (Str(c, "nutrientId") is { } id && c.TryGetProperty("quantity", out var q) && q.ValueKind == JsonValueKind.Number)
+                    values[id] = q.GetDouble();
+            }
+        }
+        double? V(string id) => values.TryGetValue(id, out var v) ? v : null;
+
+        var nb = new NutrientsBuilder
+        {
+            Kcal = f.TryGetProperty("calories", out var cal) && cal.TryGetProperty("quantity", out var k) && k.ValueKind == JsonValueKind.Number
+                ? k.GetDouble()
+                : null,
+            Protein = V("Protein"),
+            Carbs = V("Karbo"),
+            Fat = V("Fett"),
+            SaturatedFat = V("Mettet"),
+            // "Sukker" is added sugar only; "Mono+Di" matches "sukkerarter" on labels.
+            Sugar = V("Mono+Di"),
+            Fiber = V("Fiber"),
+            Salt = V("NaCl"),
+        };
+        if (nb.Kcal is null) return null;
+
+        var (nutrients, missing) = nb.Build();
+        var keywords = f.TryGetProperty("searchKeywords", out var kw) && kw.ValueKind == JsonValueKind.Array
+            ? string.Join(' ', kw.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String).Select(x => x.GetString()))
+            : "";
+        var normalizedName = Normalize(name);
+        return new Entry(normalizedName, $"{normalizedName} {Normalize(keywords)}",
+            new FoodDraft(name, null, null, null, PortionGrams(f), nutrients, FoodSource.Matvaretabellen, missing));
     }
 
     private static double? PortionGrams(JsonElement food)
