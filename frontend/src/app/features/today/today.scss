@@ -18,21 +18,24 @@
 }
 
 .ring-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
   gap: 14px;
   width: 100%;
 }
 
 .ring-wrap {
   position: relative;
-  width: 190px;
-  height: 190px;
+  width: 180px;
+  height: 180px;
   flex-shrink: 0;
 }
 
 .ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
   --mat-progress-spinner-active-indicator-color: var(--mat-sys-primary);
 
   &.over {
@@ -98,7 +101,7 @@
 
 .ring-stat-left,
 .ring-stat-right {
-  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .big {
@@ -227,5 +230,18 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ring-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 12px;
+  }
+
+  .ring-wrap {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
   }
 }

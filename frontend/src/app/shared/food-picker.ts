@@ -9,7 +9,17 @@ import { MatIcon } from '@angular/material/icon';
 import { MatInput } from '@angular/material/input';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { catchError, debounceTime, distinctUntilChanged, firstValueFrom, map, of, startWith, switchMap } from 'rxjs';
+import { MatTab, MatTabGroup } from '@angular/material/tabs';
+import {
+  catchError,
+  debounceTime,
+  distinctUntilChanged,
+  firstValueFrom,
+  map,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { FoodApi } from '../core/api';
 import { errorMessage } from '../core/errors';
 import { Food, FoodInput, LookupResult } from '../core/models';
@@ -32,6 +42,8 @@ const SOURCE_NAMES: Record<string, string> = { Matvaretabellen: 'Matvaretabellen
     MatPrefix,
     MatSuffix,
     MatProgressBar,
+    MatTabGroup,
+    MatTab,
   ],
   template: `
     @if (draft(); as d) {
@@ -59,73 +71,85 @@ const SOURCE_NAMES: Record<string, string> = { Matvaretabellen: 'Matvaretabellen
         </button>
       </mat-form-field>
 
-      @if (results() === undefined) {
-        <mat-progress-bar mode="indeterminate" />
-      } @else {
-        <div class="list">
-          @for (f of results(); track f.id) {
-            <button type="button" class="list-item" (click)="picked.emit(f)">
-              @if (f.imageUrl) {
-                <img [src]="f.imageUrl" alt="" referrerpolicy="no-referrer" />
-              }
-              <span class="grow">
-                <div class="title">{{ f.name }}</div>
-                <div class="muted small">{{ f.brand ?? '' }}</div>
-              </span>
-              <span class="muted small">{{ f.per100g.kcal | number: '1.0-0' }} kcal/100 g</span>
-            </button>
-          } @empty {
-            <p class="empty">
-              @if (query()) {
-                Ingen lagrede varer matcher «{{ query() }}».
-              } @else {
-                Ingen varer ennå. Søk eller skann en strekkode for å legge til den første.
-              }
-            </p>
-          }
-        </div>
-      }
-
-      @if (query().trim().length >= 2) {
-        <h3 class="section">Nye varer fra Matvaretabellen og butikker</h3>
-        @if (online() === undefined || busy()) {
-          <mat-progress-bar mode="indeterminate" />
-        } @else if (online() === null) {
-          <p class="empty">Søket på nett feilet. Prøv igjen.</p>
-        }
-        <div class="list">
-          @for (r of onlineResults(); track $index) {
-            <button type="button" class="list-item" [disabled]="busy()" (click)="pickOnline(r)">
-              @if (r.draft.imageUrl) {
-                <img [src]="r.draft.imageUrl" alt="" referrerpolicy="no-referrer" />
-              } @else {
-                <mat-icon class="muted">{{ r.foodId ? 'check_circle' : 'add_circle_outline' }}</mat-icon>
-              }
-              <span class="grow">
-                <div class="title">{{ r.draft.name }}</div>
-                <div class="muted small">
-                  {{ r.draft.brand ?? sourceName(r) }}
-                  @if (needsInput(r)) {
-                    · mangler næringsinnhold
+      <mat-tab-group
+        class="food-tabs"
+        [selectedIndex]="activeTab() === 'mine' ? 0 : 1"
+        (selectedIndexChange)="activeTab.set($event === 0 ? 'mine' : 'new')"
+        animationDuration="0ms"
+      >
+        <mat-tab label="Mine varer">
+          @if (results() === undefined) {
+            <mat-progress-bar mode="indeterminate" />
+          } @else {
+            <div class="list">
+              @for (f of results(); track f.id) {
+                <button type="button" class="list-item" (click)="picked.emit(f)">
+                  @if (f.imageUrl) {
+                    <img [src]="f.imageUrl" alt="" referrerpolicy="no-referrer" />
                   }
-                </div>
-              </span>
-              @if (!r.draft.missingNutrients.includes('kcal')) {
-                <span class="muted small">{{ r.draft.per100g.kcal | number: '1.0-0' }} kcal/100 g</span>
+                  <span class="grow">
+                    <div class="title">{{ f.name }}</div>
+                    <div class="muted small">{{ f.brand ?? '' }}</div>
+                  </span>
+                  <span class="muted small">{{ f.per100g.kcal | number: '1.0-0' }} kcal/100 g</span>
+                </button>
+              } @empty {
+                <p class="empty">
+                  @if (query()) {
+                    Ingen lagrede varer matcher «{{ query() }}».
+                  } @else {
+                    Ingen varer ennå. Søk eller skann en strekkode for å legge til den første.
+                  }
+                </p>
               }
-            </button>
-          } @empty {
-            @if (online()) {
-              <p class="empty">Fant ingen nye varer for «{{ query().trim() }}».</p>
-            }
+            </div>
           }
-        </div>
-      }
+        </mat-tab>
+
+        <mat-tab label="Nye varer">
+          @if (query().trim().length < 2) {
+            <p class="empty">Skriv minst to tegn for å søke etter nye varer.</p>
+          } @else {
+            @if (online() === undefined || busy()) {
+              <mat-progress-bar mode="indeterminate" />
+            } @else if (online() === null) {
+              <p class="empty">Søket på nett feilet. Prøv igjen.</p>
+            }
+            <div class="list">
+              @for (r of onlineResults(); track $index) {
+                <button type="button" class="list-item" [disabled]="busy()" (click)="pickOnline(r)">
+                  @if (r.draft.imageUrl) {
+                    <img [src]="r.draft.imageUrl" alt="" referrerpolicy="no-referrer" />
+                  } @else {
+                    <mat-icon class="muted">{{ r.foodId ? 'check_circle' : 'add_circle_outline' }}</mat-icon>
+                  }
+                  <span class="grow">
+                    <div class="title">{{ r.draft.name }}</div>
+                    <div class="muted small">
+                      {{ r.draft.brand ?? sourceName(r) }}
+                      @if (needsInput(r)) {
+                        · mangler næringsinnhold
+                      }
+                    </div>
+                  </span>
+                  @if (!r.draft.missingNutrients.includes('kcal')) {
+                    <span class="muted small">{{ r.draft.per100g.kcal | number: '1.0-0' }} kcal/100 g</span>
+                  }
+                </button>
+              } @empty {
+                @if (online()) {
+                  <p class="empty">Fant ingen nye varer for «{{ query().trim() }}».</p>
+                }
+              }
+            </div>
+          }
+        </mat-tab>
+      </mat-tab-group>
     }
   `,
   styles: `
     .list { margin-top: 8px; }
-    .section { margin: 20px 0 4px; font: var(--mat-sys-title-small); }
+    .food-tabs { margin-top: 4px; }
     .notice {
       display: flex;
       align-items: center;
@@ -145,6 +169,7 @@ export class FoodPicker {
   private api = inject(FoodApi);
   private snack = inject(MatSnackBar);
   protected readonly query = signal('');
+  protected readonly activeTab = signal<'mine' | 'new'>('mine');
   protected readonly busy = signal(false);
   protected readonly draft = signal<{ initial: FoodInput; missing: string[] } | null>(null);
   protected readonly results = toSignal(
@@ -164,15 +189,14 @@ export class FoodPicker {
 
   /** `undefined` while loading, `null` on error. */
   protected readonly online = toSignal(
-    toObservable(this.query).pipe(
+    toObservable(computed(() => ({ tab: this.activeTab(), query: this.query().trim() }))).pipe(
       // Longer debounce than the local search: Kassalapp is rate limited.
       debounceTime(500),
-      map((q) => q.trim()),
-      distinctUntilChanged(),
-      switchMap((q) =>
-        q.length < 2
+      distinctUntilChanged((a, b) => a.tab === b.tab && a.query === b.query),
+      switchMap(({ tab, query }) =>
+        tab !== 'new' || query.length < 2
           ? of([] as LookupResult[])
-          : this.api.searchOnline(q).pipe(
+          : this.api.searchOnline(query).pipe(
               startWith(undefined),
               catchError(() => of(null)),
             ),
